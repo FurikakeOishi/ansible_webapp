@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome to My Website</title>
+</head>
+<body>
+    <h1>Hello from EC2 instance {{ ansible_host }}</h1>
+    <p>This webpage is served from an EC2 instance with the local IP: {{ ansible_default_ipv4.address }}</p>
+</body>
+</html>

@@ -1,0 +1,16 @@
+---
+# defaults file for infra-setup
+instance_name: webserver
+aws_region: eu-west-1 # aws region (e.g eu-west-1)
+instance_type: t2.micro # instane type (e.g t2.micro)
+instance_username: ubuntu #webserver username (e.g ubuntu)
+
+vpc_id: vpc-111111111111111111 #vpc id
+subnet_id: subnet-111111111111111111 #subnet id
+ami_id: ami-111111111111111111 #Ubuntu
+ansible_host_ip: 11.111.111.111 #your ansible host ip
+my_ip: 22.222.222.222 #local pc ip
+
+ssh_port: 22
+http_port: 80
+https_port: 443

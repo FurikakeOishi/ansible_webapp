@@ -1,0 +1,73 @@
+---
+# tasks file for the infrastructure setup
+- name: Create the Security Group
+  ec2_group:
+    name: "{{ instance_name }}_instance_sg"
+    description: "sg for linux instance"
+    vpc_id: "{{ vpc_id }}"
+    region: "{{ aws_region }}"
+    rules:
+      - proto: tcp
+        ports:
+          - "{{ ssh_port }}"
+        cidr_ip: "{{ ansible_host_ip }}/32"
+      - proto: tcp
+        ports:
+          - "{{ http_port }}"
+        cidr_ip: "{{ my_ip }}/32"
+      - proto: tcp
+        ports:
+          - "{{ ssh_port }}"
+        cidr_ip: "{{ my_ip }}/32"
+    rules_egress:
+      - proto: tcp
+        ports:
+          - "{{ http_port }}"
+        cidr_ip: "0.0.0.0/0"
+      - proto: tcp
+        ports:
+          - "{{ https_port }}"
+        cidr_ip: "0.0.0.0/0"
+  register: instance_security_group
+
+- name: Provision the linux instance
+  amazon.aws.ec2_instance:
+    name: "{{ instance_name }}"
+    key_name: "{{ webserver_key_name }}"
+    instance_type: "{{ instance_type }}"
+    image_id: "{{ ami_id }}"
+    state: "running"
+    security_group: "{{ instance_security_group.group_id }}"
+    region: "{{ aws_region }}"
+    vpc_subnet_id: "{{ subnet_id }}"
+    network:
+      assign_public_ip: yes
+    tags:
+      EnvName: "Test Environment"
+  register: ec2_instance
+
+- name: Wait for the EC2 instance to be in a running state
+  wait_for:
+    host: "{{ item.public_ip_address }}"
+    port: 22
+    delay: 10
+    timeout: 300
+    state: started
+  with_items: "{{ ec2_instance.instances }}"
+
+- name: Copy encrypted SSH key
+  copy:
+    src: "../keys/{{ webserver_key_name }}.pem"
+    dest: "../keys/secret_{{ webserver_key_name }}.pem"
+    mode: 0600
+
+- name: Write the new ec2 instance host key to known hosts
+  connection: local
+  shell: "ssh-keyscan -H {{ item.public_ip_address }} >> ~/.ssh/known_hosts"
+  with_items: "{{ ec2_instance.instances }}"
+
+- name: Add the created EC2 instance to the host group
+  add_host:
+    hostname: "{{ instance_username }}@{{ item.public_ip_address }}"
+    groupname: webserver_ec2
+  with_items: "{{ ec2_instance.instances }}"

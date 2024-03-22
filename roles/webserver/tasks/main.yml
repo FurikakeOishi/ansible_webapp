@@ -1,0 +1,27 @@
+---
+- name: Install Apache
+  become: true
+  apt:
+    name: apache2
+    state: present
+
+- name: Ensure Apache is running
+  service:
+    name: apache2
+    state: started
+    enabled: yes
+
+- name: Configure Apache to listen on specified port
+  lineinfile:
+    path: /etc/apache2/ports.conf
+    line: Listen {{ webserver_port }}
+  
+- name: Create index.html displaying local IP address
+  become: true
+  template:
+    src: index.html.j2
+    dest: /var/www/html/index.html
+
+- name: Print the IP address of the Ansible host
+  debug:
+    msg: "Connect to the webpage: http://{{ ansible_host }}:80"
